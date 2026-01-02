@@ -2,7 +2,7 @@ name: Build and Push QingLong Docker Image
 
 on:
   push:
-    branches: [ main ]
+    分支: [ main ]
     paths:
       - 'QingLong/services.json'
       - 'QingLong/notify.py'
@@ -44,7 +44,7 @@ jobs:
           context: ./QingLong
           push: true
           tags: |
-            ghcr.io/${{ steps.lower-repo.outputs.repository }}/qinglong:latest
+            ghcr.io/${{ steps.lower-repo.outputs.repository }}/zidh:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=QingLong Docker Image
