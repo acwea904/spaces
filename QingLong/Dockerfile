@@ -78,6 +78,8 @@ RUN set -x && \
   sshpass \
   rclone \
   unzip \
+  chromium \
+  chromium-chromedriver \
   libatomic1 && \
   apt-get clean && \
   ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
