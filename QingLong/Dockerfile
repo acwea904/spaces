@@ -78,9 +78,19 @@ RUN set -x && \
   sshpass \
   rclone \
   unzip \
+  libatomic1 \
   chromium \
-  chromium-chromedriver \
-  libatomic1 && \
+  chromium-driver \
+  fonts-liberation \
+  libasound2 \
+  libatk-bridge2.0-0 \
+  libgtk-3-0 \
+  libnspr4 \
+  libnss3 \
+  libx11-xcb1 \
+  libxss1 \
+  libxtst6 \
+  xdg-utils && \
   apt-get clean && \
   ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
   echo "Asia/Shanghai" >/etc/timezone && \
