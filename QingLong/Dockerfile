@@ -1,6 +1,8 @@
-FROM node:20-slim AS nodebuilder  # 修复1：AS 大写
+# 修复1：AS 关键字必须大写
+FROM node:20-slim AS nodebuilder
 
-FROM python:3.11-slim-bullseye AS builder  # 修复1：AS 大写
+# 修复1：AS 关键字必须大写
+FROM python:3.11-slim-bullseye AS builder
 ARG QL_MAINTAINER="whyour"
 LABEL maintainer="${QL_MAINTAINER}"
 ARG QL_URL=https://github.com/${QL_MAINTAINER}/qinglong.git
@@ -34,12 +36,12 @@ LABEL maintainer="${QL_MAINTAINER}"
 ARG QL_URL=https://github.com/${QL_MAINTAINER}/qinglong.git
 ARG QL_BRANCH=debian
 
-# 修复2：先定义 PNPM_HOME，再使用它
+# 修复2：先定义 PNPM_HOME
 ENV PNPM_HOME=/root/.local/share/pnpm \
   QL_DIR=/ql \
   QL_BRANCH=${QL_BRANCH}
 
-# 修复2：PATH 中使用 ${PNPM_HOME} 而不是 $PNPM_HOME
+# 修复2：PATH 中使用 ${PNPM_HOME}
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PNPM_HOME}:${PNPM_HOME}/global/5/node_modules:${PNPM_HOME} \
   NODE_PATH=/usr/local/bin:/usr/local/pnpm-global/5/node_modules:/usr/local/lib/node_modules:/root/.local/share/pnpm/global/5/node_modules \
   LANG=C.UTF-8 \
@@ -49,7 +51,7 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PNPM_HOM
 COPY --from=nodebuilder /usr/local/bin/node /usr/local/bin/
 COPY --from=nodebuilder /usr/local/lib/node_modules/. /usr/local/lib/node_modules/
 
-# 修复3：添加 chromium 相关包 + 清理优化
+# 修复3：添加 chromium 相关包
 RUN set -x && \
   ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
   ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
@@ -75,16 +77,14 @@ RUN set -x && \
   chmod u+s /usr/sbin/cron && \
   ulimit -c 0
 
-# Install code-server (带清理)
 RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --version=4.96.4 && \
   rm -rf /tmp/code-server-install.sh /root/.cache
 
-# Install ollama (带清理)
 RUN curl -fsSL https://ollama.com/install.sh | sh && \
   rm -rf /tmp/ollama-install.sh /root/.ollama/.install
 
 ARG SOURCE_COMMIT
-# 修复4：移除 URL 中的空格（关键错误）
+# 修复4：移除 URL 中的空格
 RUN git clone --depth=1 -b ${QL_BRANCH} ${QL_URL} ${QL_DIR} && \
   cd ${QL_DIR} && \
   cp -f .env.example .env && \
@@ -104,7 +104,6 @@ COPY --from=builder /tmp/build/node_modules/. /ql/node_modules/
 COPY services.json /ql/node_modules/nodemailer/lib/well-known/
 COPY notify.py /notify.py
 
-# Create code-server user
 RUN useradd -m -s /bin/zsh coder && \
   echo 'coder ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
   mkdir -p /home/coder/.local/share/code-server/User && \
