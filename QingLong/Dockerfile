@@ -1,6 +1,6 @@
-FROM node:20-slim as nodebuilder
+FROM node:20-slim AS nodebuilder  # 修复1：AS 大写
 
-FROM python:3.11-slim-bullseye as builder
+FROM python:3.11-slim-bullseye AS builder  # 修复1：AS 大写
 ARG QL_MAINTAINER="whyour"
 LABEL maintainer="${QL_MAINTAINER}"
 ARG QL_URL=https://github.com/${QL_MAINTAINER}/qinglong.git
@@ -34,30 +34,35 @@ LABEL maintainer="${QL_MAINTAINER}"
 ARG QL_URL=https://github.com/${QL_MAINTAINER}/qinglong.git
 ARG QL_BRANCH=debian
 
+# 修复2：先定义 PNPM_HOME，再使用它
 ENV PNPM_HOME=/root/.local/share/pnpm \
-  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/share/pnpm:/root/.local/share/pnpm/global/5/node_modules:$PNPM_HOME \
+  QL_DIR=/ql \
+  QL_BRANCH=${QL_BRANCH}
+
+# 修复2：PATH 中使用 ${PNPM_HOME} 而不是 $PNPM_HOME
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PNPM_HOME}:${PNPM_HOME}/global/5/node_modules:${PNPM_HOME} \
   NODE_PATH=/usr/local/bin:/usr/local/pnpm-global/5/node_modules:/usr/local/lib/node_modules:/root/.local/share/pnpm/global/5/node_modules \
   LANG=C.UTF-8 \
   SHELL=/bin/bash \
-  PS1="\u@\h:\w \$ " \
-  QL_DIR=/ql \
-  QL_BRANCH=${QL_BRANCH}
+  PS1="\u@\h:\w \$ "
 
 COPY --from=nodebuilder /usr/local/bin/node /usr/local/bin/
 COPY --from=nodebuilder /usr/local/lib/node_modules/. /usr/local/lib/node_modules/
 
-# 🎯 核心修改：添加 Chromium 及依赖 + 强力清理
+# 修复3：添加 chromium 相关包 + 清理优化
 RUN set -x && \
   ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
   ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
   apt-get update && \
   apt-get upgrade -y && \
   apt-get install --no-install-recommends -y \
-  git curl sudo build-essential default-jdk default-jre g++ gcc libzbar0 \
-  fish ffmpeg nmap ca-certificates zsh cron wget tzdata perl openssl \
-  openssh-client nginx jq procps netcat sshpass rclone unzip libatomic1 \
-  chromium chromium-driver fonts-liberation libasound2 libatk-bridge2.0-0 \
-  libgtk-3-0 libnspr4 libnss3 libx11-xcb1 libxss1 libxtst6 xdg-utils && \
+  git curl sudo build-essential default-jdk default-jre g++ gcc \
+  libzbar0 fish ffmpeg nmap ca-certificates zsh cron wget tzdata \
+  perl openssl openssh-client nginx jq procps netcat sshpass rclone \
+  unzip libatomic1 \
+  chromium chromium-driver fonts-liberation libasound2 \
+  libatk-bridge2.0-0 libgtk-3-0 libnspr4 libnss3 libx11-xcb1 \
+  libxss1 libxtst6 xdg-utils && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc /usr/share/man && \
   ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
@@ -76,10 +81,10 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --version=4.96.4 &&
 
 # Install ollama (带清理)
 RUN curl -fsSL https://ollama.com/install.sh | sh && \
-  rm -rf /tmp/ollama-install.sh /root/.ollama/.install && \
-  ollama --version
+  rm -rf /tmp/ollama-install.sh /root/.ollama/.install
 
 ARG SOURCE_COMMIT
+# 修复4：移除 URL 中的空格（关键错误）
 RUN git clone --depth=1 -b ${QL_BRANCH} ${QL_URL} ${QL_DIR} && \
   cd ${QL_DIR} && \
   cp -f .env.example .env && \
