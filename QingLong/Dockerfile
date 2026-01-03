@@ -1,7 +1,5 @@
-# 修复1：AS 关键字必须大写
 FROM node:20-slim AS nodebuilder
 
-# 修复1：AS 关键字必须大写
 FROM python:3.11-slim-bullseye AS builder
 ARG QL_MAINTAINER="whyour"
 LABEL maintainer="${QL_MAINTAINER}"
@@ -36,12 +34,10 @@ LABEL maintainer="${QL_MAINTAINER}"
 ARG QL_URL=https://github.com/${QL_MAINTAINER}/qinglong.git
 ARG QL_BRANCH=debian
 
-# 修复2：先定义 PNPM_HOME
 ENV PNPM_HOME=/root/.local/share/pnpm \
   QL_DIR=/ql \
   QL_BRANCH=${QL_BRANCH}
 
-# 修复2：PATH 中使用 ${PNPM_HOME}
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PNPM_HOME}:${PNPM_HOME}/global/5/node_modules:${PNPM_HOME} \
   NODE_PATH=/usr/local/bin:/usr/local/pnpm-global/5/node_modules:/usr/local/lib/node_modules:/root/.local/share/pnpm/global/5/node_modules \
   LANG=C.UTF-8 \
@@ -51,7 +47,6 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PNPM_HOM
 COPY --from=nodebuilder /usr/local/bin/node /usr/local/bin/
 COPY --from=nodebuilder /usr/local/lib/node_modules/. /usr/local/lib/node_modules/
 
-# 修复3：添加 chromium 相关包
 RUN set -x && \
   ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
   ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
@@ -84,14 +79,15 @@ RUN curl -fsSL https://ollama.com/install.sh | sh && \
   rm -rf /tmp/ollama-install.sh /root/.ollama/.install
 
 ARG SOURCE_COMMIT
-# 修复4：移除 URL 中的空格
+# 🎯 核心修复：移除 URL 空格 + 确保目录存在
 RUN git clone --depth=1 -b ${QL_BRANCH} ${QL_URL} ${QL_DIR} && \
   cd ${QL_DIR} && \
   cp -f .env.example .env && \
   chmod 777 ${QL_DIR}/shell/*.sh ${QL_DIR}/docker/*.sh && \
-  git clone --depth=1 -b ${QL_BRANCH} https://github.com/${QL_MAINTAINER}/qinglong-static.git /static && \
-  cp -rf /static/* ${QL_DIR}/static && \
-  rm -rf /static ${QL_DIR}/.git && \
+  mkdir -p ${QL_DIR}/static && \
+  git clone --depth=1 -b ${QL_BRANCH} https://github.com/${QL_MAINTAINER}/qinglong-static.git /tmp/static && \
+  cp -rf /tmp/static/* ${QL_DIR}/static/ && \
+  rm -rf /tmp/static ${QL_DIR}/.git && \
   rm -f ${QL_DIR}/docker/docker-entrypoint.sh
 
 COPY docker-entrypoint.sh ${QL_DIR}/docker
